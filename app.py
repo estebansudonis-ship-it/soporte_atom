@@ -26,11 +26,12 @@ st.markdown("""
 # 2. Barra lateral con Identidad Visual
 st.sidebar.markdown("<h2 style='color: #0B1F33; margin-top: 0;'>🤖 Atom Soporte</h2>", unsafe_with_html=True)
 
-# NOTA: Cuando tengas la URL de la imagen de tu logo, puedes descomentar la siguiente línea:
-# st.sidebar.image("https://tu-url-del-logo.com/logo.png", use_container_width=True)
-
 st.sidebar.header("📁 Carga de Datos")
 uploaded_file = st.sidebar.file_uploader("Sube el archivo de tickets aquí (.xlsx o .csv)", type=["xlsx", "csv"])
+
+# Título Principal con Línea de Marca (Naranja Atom) siempre visible
+st.markdown("<h1 style='color: #0B1F33; margin-bottom: 0;'>📊 Dashboard de Estatus de Tickets</h1>", unsafe_with_html=True)
+st.markdown("<hr style='border: 2px solid #FF6A1A; margin-top: 5px; margin-bottom: 25px;'>", unsafe_with_html=True)
 
 if uploaded_file is not None:
     try:
@@ -62,10 +63,6 @@ if uploaded_file is not None:
             start_date, end_date = date_range
             df_filtered = df_filtered[(df_filtered['Assigned Date'].dt.date >= start_date) & (df_filtered['Assigned Date'].dt.date <= end_date)]
 
-        # Título Principal con Línea de Marca (Naranja Atom)
-        st.markdown("<h1 style='color: #0B1F33; margin-bottom: 0;'>📊 Dashboard de Estatus de Tickets</h1>", unsafe_with_html=True)
-        st.markdown("<hr style='border: 2px solid #FF6A1A; margin-top: 5px; margin-bottom: 25px;'>", unsafe_with_html=True)
-
         # KPIs Principales
         total_t = len(df_filtered)
         abiertos = len(df_filtered[df_filtered['Conversation Status'].str.lower() == 'open']) if 'Conversation Status' in df_filtered.columns else 0
@@ -91,7 +88,6 @@ if uploaded_file is not None:
             
         df_time_grouped = df_time.groupby('Periodo').size().reset_index(name='Cantidad de Tickets')
         
-        # text_auto=True añade los números directamente sobre cada punto del gráfico
         fig_time = px.line(df_time_grouped, x='Periodo', y='Cantidad de Tickets', markers=True, text='Cantidad de Tickets',
                            title=f"Evolución de Tickets por {view_time}", color_discrete_sequence=["#FF6A1A"])
         fig_time.update_traces(textposition="top center")
@@ -104,7 +100,6 @@ if uploaded_file is not None:
             # REQUERIMIENTO 2: Gráfica de Rueda limpia sin textos repetitivos en el mouse
             st.subheader("🍩 Categorías de Conversación")
             if 'Categoría de Conversación' in df_filtered.columns and df_filtered['Categoría de Conversación'].notnull().any():
-                # Rellenamos nulos por estética limpia
                 df_pie = df_filtered.copy()
                 df_pie['Categoría de Conversación'] = df_pie['Categoría de Conversación'].fillna('Sin Categoría')
                 
@@ -112,7 +107,6 @@ if uploaded_file is not None:
                                  title="Porcentaje por Categoría",
                                  color_discrete_sequence=["#0B1F33", "#FF6A1A", "#0F9B8E", "#5E6B78", "#D9E1E8"])
                 
-                # Se limpia el hover para mostrar solo la categoría y el valor puro
                 fig_cat.update_traces(hovertemplate="<b>%{label}</b><br>Tickets: %{value}<br>Porcentaje: %{percent}")
                 st.plotly_chart(fig_cat, use_container_width=True)
             else:
