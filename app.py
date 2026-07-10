@@ -5,8 +5,8 @@ import plotly.express as px
 # 1. Configuración de la página e Identidad Visual (Tipografía Sans-Serif)
 st.set_page_config(page_title="Dashboard de Tickets - Atom", layout="wide", initial_sidebar_state="expanded")
 
-# Estilos CSS institucionales de Atom
-st.markdown("""
+# Solución al TypeError: Usamos st.html en lugar de st.markdown con unsafe_with_html
+st.html("""
     <style>
     html, body, [data-testid="stSidebar"] {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,7 +21,7 @@ st.markdown("""
         border: 1px solid #D9E1E8;
     }
     </style>
-    """, unsafe_with_html=True)
+    """)
 
 # 2. Barra lateral con Identidad Visual
 st.sidebar.markdown("<h2 style='color: #0B1F33; margin-top: 0;'>🤖 Atom Soporte</h2>", unsafe_with_html=True)
@@ -33,7 +33,7 @@ uploaded_file = st.sidebar.file_uploader("Sube el archivo de tickets aquí (.xls
 st.markdown("<h1 style='color: #0B1F33; margin-bottom: 0;'>📊 Dashboard de Estatus de Tickets</h1>", unsafe_with_html=True)
 st.markdown("<hr style='border: 2px solid #FF6A1A; margin-top: 5px; margin-bottom: 25px;'>", unsafe_with_html=True)
 
-# TODO el procesamiento visual solo ocurre SI el usuario ya cargó un archivo
+# Todo el procesamiento visual ocurre SI el usuario ya cargó un archivo
 if uploaded_file is not None:
     try:
         if uploaded_file.name.endswith('.csv'):
