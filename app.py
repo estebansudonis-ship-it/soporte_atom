@@ -2,38 +2,18 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. Configuración de la página e Identidad Visual (Tipografía Sans-Serif)
+# 1. Configuración de la página
 st.set_page_config(page_title="Dashboard de Tickets - Atom", layout="wide", initial_sidebar_state="expanded")
 
-# Solución al TypeError: Usamos st.html en lugar de st.markdown con unsafe_with_html
-st.html("""
-    <style>
-    html, body, [data-testid="stSidebar"] {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    h1, h2, h3 {
-        color: #0B1F33 !important;
-    }
-    .stMetric {
-        background-color: #F5F7FA;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #D9E1E8;
-    }
-    </style>
-    """)
-
-# 2. Barra lateral con Identidad Visual
-st.sidebar.markdown("<h2 style='color: #0B1F33; margin-top: 0;'>🤖 Atom Soporte</h2>", unsafe_with_html=True)
-
+# 2. Barra lateral con Identidad Visual nativa (Sin HTML para evitar fallos de versión)
+st.sidebar.title("🤖 Atom Soporte")
 st.sidebar.header("📁 Carga de Datos")
 uploaded_file = st.sidebar.file_uploader("Sube el archivo de tickets aquí (.xlsx o .csv)", type=["xlsx", "csv"])
 
-# Título Principal con Línea de Marca (Naranja Atom) siempre visible
-st.markdown("<h1 style='color: #0B1F33; margin-bottom: 0;'>📊 Dashboard de Estatus de Tickets</h1>", unsafe_with_html=True)
-st.markdown("<hr style='border: 2px solid #FF6A1A; margin-top: 5px; margin-bottom: 25px;'>", unsafe_with_html=True)
+# Título Principal nativo
+st.title("📊 Dashboard de Estatus de Tickets")
 
-# Todo el procesamiento visual ocurre SI el usuario ya cargó un archivo
+# Todo el procesamiento visual ocurre únicamente si el usuario ya cargó un archivo
 if uploaded_file is not None:
     try:
         if uploaded_file.name.endswith('.csv'):
@@ -73,7 +53,6 @@ if uploaded_file is not None:
         kpi1.metric("Total Tickets Filtrados", f"{total_t:,}")
         kpi2.metric("🔴 Tickets Abiertos", f"{abiertos:,}")
         kpi3.metric("🟢 Tickets Cerrados", f"{cerrados:,}")
-        st.write("")
 
         # 📅 Línea de tiempo con números visibles en cada punto
         st.subheader("📅 Línea de Tiempo de Tickets Creados")
@@ -94,7 +73,6 @@ if uploaded_file is not None:
         fig_time.update_traces(textposition="top center")
         fig_time.update_layout(xaxis_title="Período", yaxis_title="Tickets")
         st.plotly_chart(fig_time, use_container_width=True)
-        st.write("")
 
         col1, col2 = st.columns(2)
 
@@ -125,7 +103,6 @@ if uploaded_file is not None:
             else:
                 st.info("No hay suficientes datos en 'Contact Name'")
 
-        st.write("")
         col3, col4 = st.columns(2)
 
         with col3:
@@ -149,10 +126,8 @@ if uploaded_file is not None:
             else:
                 st.info("No hay datos disponibles sobre 'Tiempo de cierre'.")
 
-        st.write("")
-
         # 📋 Tabla de Auditoría
-        st.markdown("<h3 style='color: #0B1F33;'>📋 Tabla de Auditoría Completa</h3>", unsafe_with_html=True)
+        st.subheader("📋 Tabla de Auditoría Completa")
         columnas_auditoria = [
             'record', 'Assigned Date', 'Assigned Support', 'Descripción del chat', 
             'Conversation Status', 'Contact Name', 'Módulo Afectado', 'Categoría de Conversación', 
