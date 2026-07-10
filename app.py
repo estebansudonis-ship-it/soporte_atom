@@ -2,15 +2,33 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. Configuración de la página
-st.set_page_config(page_title="Dashboard de Tickets - Siigo", layout="wide", initial_sidebar_state="expanded")
+# 1. Configuración de la página e Identidad Visual (Tipografía Sans-Serif)
+st.set_page_config(page_title="Dashboard de Tickets - Atom", layout="wide", initial_sidebar_state="expanded")
 
-# Título Principal
-st.title("📊 Dashboard de Estatus de Tickets de Soporte")
-st.markdown("Carga tu archivo de Excel o CSV en el panel de la izquierda para actualizar automáticamente todas las métricas.")
-st.divider()
+# Estilos CSS para forzar la tipografía moderna Sans-Serif y adaptar colores institucionales
+st.markdown("""
+    <style>
+    html, body, [data-testid="stSidebar"] {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    h1, h2, h3 {
+        color: #0B1F33 !important;
+    }
+    .stMetric {
+        background-color: #F5F7FA;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #D9E1E8;
+    }
+    </style>
+    """, unsafe_with_html=True)
 
-# 2. Barra lateral para Carga de Datos y Filtros
+# 2. Barra lateral con Identidad Visual
+st.sidebar.markdown("<h2 style='color: #0B1F33; margin-top: 0;'>🤖 Atom Soporte</h2>", unsafe_with_html=True)
+
+# NOTA: Cuando tengas la URL de la imagen de tu logo, puedes descomentar la siguiente línea:
+# st.sidebar.image("https://tu-url-del-logo.com/logo.png", use_container_width=True)
+
 st.sidebar.header("📁 Carga de Datos")
 uploaded_file = st.sidebar.file_uploader("Sube el archivo de tickets aquí (.xlsx o .csv)", type=["xlsx", "csv"])
 
@@ -44,6 +62,11 @@ if uploaded_file is not None:
             start_date, end_date = date_range
             df_filtered = df_filtered[(df_filtered['Assigned Date'].dt.date >= start_date) & (df_filtered['Assigned Date'].dt.date <= end_date)]
 
+        # Título Principal con Línea de Marca (Naranja Atom)
+        st.markdown("<h1 style='color: #0B1F33; margin-bottom: 0;'>📊 Dashboard de Estatus de Tickets</h1>", unsafe_with_html=True)
+        st.markdown("<hr style='border: 2px solid #FF6A1A; margin-top: 5px; margin-bottom: 25px;'>", unsafe_with_html=True)
+
+        # KPIs Principales
         total_t = len(df_filtered)
         abiertos = len(df_filtered[df_filtered['Conversation Status'].str.lower() == 'open']) if 'Conversation Status' in df_filtered.columns else 0
         cerrados = len(df_filtered[df_filtered['Conversation Status'].str.lower() == 'closed']) if 'Conversation Status' in df_filtered.columns else 0
@@ -52,9 +75,9 @@ if uploaded_file is not None:
         kpi1.metric("Total Tickets Filtrados", total_t)
         kpi2.metric("🔴 Tickets Abiertos", abiertos)
         kpi3.metric("🟢 Tickets Cerrados", cerrados)
-        st.divider()
+        st.write("")
 
-        # REQUERIMIENTO: Línea de tiempo
+        # REQUERIMIENTO 1: Línea de tiempo con números visibles en cada punto
         st.subheader("📅 Línea de Tiempo de Tickets Creados")
         view_time = st.radio("Ver agrupación por:", ["Día", "Semana", "Mes"], horizontal=True)
         
@@ -67,17 +90,30 @@ if uploaded_file is not None:
             df_time['Periodo'] = df_time['Assigned Date'].dt.to_period('M').astype(str)
             
         df_time_grouped = df_time.groupby('Periodo').size().reset_index(name='Cantidad de Tickets')
-        fig_time = px.line(df_time_grouped, x='Periodo', y='Cantidad de Tickets', markers=True,
-                           title=f"Evolución de Tickets por {view_time}", color_discrete_sequence=["#2ca02c"])
+        
+        # text_auto=True añade los números directamente sobre cada punto del gráfico
+        fig_time = px.line(df_time_grouped, x='Periodo', y='Cantidad de Tickets', markers=True, text='Cantidad de Tickets',
+                           title=f"Evolución de Tickets por {view_time}", color_discrete_sequence=["#FF6A1A"])
+        fig_time.update_traces(textposition="top center")
         st.plotly_chart(fig_time, use_container_width=True)
-        st.divider()
+        st.write("")
 
         col1, col2 = st.columns(2)
 
         with col1:
+            # REQUERIMIENTO 2: Gráfica de Rueda limpia sin textos repetitivos en el mouse
             st.subheader("🍩 Categorías de Conversación")
             if 'Categoría de Conversación' in df_filtered.columns and df_filtered['Categoría de Conversación'].notnull().any():
-                fig_cat = px.pie(df_filtered, names='Categoría de Conversación', hole=0.4, title="Porcentaje por Categoría")
+                # Rellenamos nulos por estética limpia
+                df_pie = df_filtered.copy()
+                df_pie['Categoría de Conversación'] = df_pie['Categoría de Conversación'].fillna('Sin Categoría')
+                
+                fig_cat = px.pie(df_pie, names='Categoría de Conversación', hole=0.4, 
+                                 title="Porcentaje por Categoría",
+                                 color_discrete_sequence=["#0B1F33", "#FF6A1A", "#0F9B8E", "#5E6B78", "#D9E1E8"])
+                
+                # Se limpia el hover para mostrar solo la categoría y el valor puro
+                fig_cat.update_traces(hovertemplate="<b>%{label}</b><br>Tickets: %{value}<br>Porcentaje: %{percent}")
                 st.plotly_chart(fig_cat, use_container_width=True)
             else:
                 st.info("No hay suficientes datos en 'Categoría de Conversación'")
@@ -87,13 +123,14 @@ if uploaded_file is not None:
             if 'Contact Name' in df_filtered.columns and df_filtered['Contact Name'].notnull().any():
                 df_contact = df_filtered['Contact Name'].value_counts().reset_index()
                 df_contact.columns = ['Nombre de Contacto', 'Tickets']
-                fig_contact = px.bar(df_contact.head(10), x='Tickets', y='Nombre de Contacto', orientation='h', title="Top 10 Contact Name")
+                fig_contact = px.bar(df_contact.head(10), x='Tickets', y='Nombre de Contacto', orientation='h', 
+                                     title="Top 10 Contact Name", color_discrete_sequence=["#0B1F33"])
                 fig_contact.update_layout(yaxis={'categoryorder':'total ascending'})
                 st.plotly_chart(fig_contact, use_container_width=True)
             else:
                 st.info("No hay suficientes datos en 'Contact Name'")
 
-        st.divider()
+        st.write("")
         col3, col4 = st.columns(2)
 
         with col3:
@@ -101,7 +138,8 @@ if uploaded_file is not None:
             if 'Módulo Afectado' in df_filtered.columns and df_filtered['Módulo Afectado'].notnull().any():
                 df_modulo = df_filtered['Módulo Afectado'].value_counts().reset_index()
                 df_modulo.columns = ['Módulo', 'Cantidad']
-                fig_modulo = px.bar(df_modulo, x='Módulo', y='Cantidad', title="Tickets por Módulo Afectado")
+                fig_modulo = px.bar(df_modulo, x='Módulo', y='Cantidad', title="Tickets por Módulo Afectado",
+                                    color_discrete_sequence=["#0F9B8E"])
                 st.plotly_chart(fig_modulo, use_container_width=True)
             else:
                 st.info("No hay suficientes datos en 'Módulo Afectado'")
@@ -110,15 +148,16 @@ if uploaded_file is not None:
             st.subheader("⏳ Análisis de Tiempo de Cierre")
             if 'Tiempo de cierre' in df_filtered.columns and df_filtered['Tiempo de cierre'].notnull().any():
                 df_close_time = df_filtered.dropna(subset=['Tiempo de cierre'])
-                fig_close = px.histogram(df_close_time, x='Tiempo de cierre', title="Distribución de Tiempos de Cierre")
+                fig_close = px.histogram(df_close_time, x='Tiempo de cierre', title="Distribución de Tiempos de Cierre",
+                                         color_discrete_sequence=["#5E6B78"])
                 st.plotly_chart(fig_close, use_container_width=True)
             else:
                 st.info("No hay datos disponibles sobre 'Tiempo de cierre'.")
 
-        st.divider()
+        st.write("")
 
-        # REQUERIMIENTO: Tabla de Auditoría
-        st.subheader("📋 Tabla de Auditoría Completa")
+        # Tabla de Auditoría
+        st.markdown("<h3 style='color: #0B1F33;'>📋 Tabla de Auditoría Completa</h3>", unsafe_with_html=True)
         columnas_auditoria = [
             'record', 'Assigned Date', 'Assigned Support', 'Descripción del chat', 
             'Conversation Status', 'Contact Name', 'Módulo Afectado', 'Categoría de Conversación', 
